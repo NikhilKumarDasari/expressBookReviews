@@ -3,6 +3,7 @@ let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
+const axios = require('axios');
 
 
 public_users.post("/register", (req,res) => {
@@ -37,13 +38,18 @@ public_users.get('/isbn/:isbn',function (req, res) {
  });
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-  const author = req.params.author;
+public_users.get('/author/:author', async (req, res) => {
+  const author = req.params.author.toLowerCase();
   let result = [];
 
-  Object.keys(books).forEach((key) => {
-    if (books[key].author.toLowerCase() === author.toLowerCase()) {
-      result.push(books[key]);
+  Object.keys(books).forEach((isbn) => {
+    if (books[isbn].author.toLowerCase() === author) {
+      result.push({
+        isbn: isbn,
+        author: books[isbn].author,
+        title: books[isbn].title,
+        reviews: books[isbn].reviews
+      });
     }
   });
 
@@ -53,6 +59,7 @@ public_users.get('/author/:author',function (req, res) {
 
   return res.status(404).json({ message: "No books found for this author" });
 });
+
 
 // Get all books based on title
 public_users.get('/title/:title',function (req, res) {
@@ -88,10 +95,8 @@ public_users.get('/review/:isbn',function (req, res) {
 // ============================
 public_users.get('/async/books', async (req, res) => {
   try {
-    const data = await new Promise((resolve) => {
-      resolve(books);
-    });
-    return res.status(200).json(data);
+    const response = await axios.get('http://localhost:5000/');
+    return res.status(200).json(response.data);
   } catch (error) {
     return res.status(500).json({ message: "Error fetching books" });
   }
